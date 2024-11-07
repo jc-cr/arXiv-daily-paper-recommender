@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  arxiv-recommender:
+    build:
+      context: ..
+      dockerfile: .docker/Dockerfile
+    volumes:
+      - ../app:/app
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}

@@ -1,0 +1,5 @@
+app/output/*
+!app/output/.gitkeep
+app/input/*
+!app/input/.gitkeep
+!app/input/user_profile.txt

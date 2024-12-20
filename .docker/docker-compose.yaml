@@ -5,9 +5,12 @@ services:
     build:
       context: ..
       dockerfile: .docker/Dockerfile
+    user: "${UID-1000}:${GID-1000}"
     volumes:
-      - ../app:/app
+      - ../app/output:/app/output
+      - ../app/input:/app/input
+      - ../app/scripts:/app/scripts
     env_file:
       - .env
     working_dir: /app
-    command: "python3 main.py"
+    command: "python3 scripts/main.py"

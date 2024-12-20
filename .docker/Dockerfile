@@ -1,14 +1,7 @@
 # Dockerfile
-FROM python:3.9-slim
+FROM python:3.10
 
 WORKDIR /app
 
 # Install dependencies
-COPY .docker/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY app/ .
-
-# Run the application
-CMD ["python", "main.py"]
+RUN pip install python-dotenv

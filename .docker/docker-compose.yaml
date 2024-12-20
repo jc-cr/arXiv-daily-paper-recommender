@@ -7,5 +7,7 @@ services:
       dockerfile: .docker/Dockerfile
     volumes:
       - ../app:/app
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    env_file:
+      - .env
+    working_dir: /app
+    command: "python3 main.py"

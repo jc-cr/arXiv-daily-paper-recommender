@@ -1,0 +1,3 @@
+Researcher working in robotics for construction and civil engineering applications.
+Primarily interested in computer vision, AI, machine learning, edge computing, and human robot interactions. 
+Other interests include software development, data science, IoT, biological robots, chaos theory, optimization, minimalism, and simulations.

@@ -3,3 +3,4 @@ app/output/*
 app/input/*
 !app/input/.gitkeep
 .env
+.docker/.env

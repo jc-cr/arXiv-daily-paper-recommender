@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arxiv Paper Recommender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .user-bio {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .drop-zone.dragover {
+            border-color: #0066cc;
+            background-color: #f0f7ff;
+        }
+
+        .drop-zone p {
+            margin: 0;
+            color: #666;
+        }
+
+        .current-file {
+            margin-top: 10px;
+            color: #0066cc;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .submit-btn:hover {
+            background-color: #0052a3;
+        }
+
+        .submit-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #cc0000;
+            margin-top: 10px;
+        }
+
+        .recommendations {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .paper-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .paper-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .paper-card .authors {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .paper-card .abstract {
+            color: #444;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            font-style: italic;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .paper-card .link {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .paper-card .link:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading::after {
+            content: "Loading...";
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h1>Arxiv Paper Recommendation App</h1>
+            
+            <h2>User Bio</h2>
+            <textarea class="user-bio" placeholder="Enter your research interests and background..."></textarea>
+            
+            <h2>.eml File of Arxiv Papers</h2>
+            <div class="drop-zone" id="dropZone">
+                <p>Drag and drop your .eml file here, or click to select</p>
+                <input type="file" id="fileInput" accept=".eml" style="display: none;">
+                <div class="current-file" id="currentFile"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="numRecommendations">Number of Recommendations:</label>
+                <select id="numRecommendations">
+                    <option value="5" selected>5 papers</option>
+                    <option value="4">4 papers</option>
+                    <option value="3">3 papers</option>
+                    <option value="2">2 papers</option>
+                    <option value="1">1 paper</option>
+                </select>
+            </div>
+            
+            <button class="submit-btn" id="submitBtn" disabled>Get Recommendations</button>
+            <div class="error" id="error"></div>
+        </div>
+        
+        <div class="right-panel">
+            <h2>Current Recommendations</h2>
+            <div class="loading" id="loading"></div>
+            <div class="recommendations" id="recommendations"></div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const currentFile = document.getElementById('currentFile');
+        const submitBtn = document.getElementById('submitBtn');
+        const error = document.getElementById('error');
+        const loading = document.getElementById('loading');
+        const recommendations = document.getElementById('recommendations');
+        const userBio = document.querySelector('.user-bio');
+        const numRecommendations = document.getElementById('numRecommendations');
+        
+        let selectedFile = null;
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+            
+            if (!file.name.endsWith('.eml')) {
+                error.textContent = 'Please upload a .eml file';
+                return;
+            }
+
+            selectedFile = file;
+            currentFile.textContent = file.name;
+            error.textContent = '';
+            updateSubmitButton();
+        }
+
+        userBio.addEventListener('input', updateSubmitButton);
+
+        function updateSubmitButton() {
+            submitBtn.disabled = !selectedFile || !userBio.value.trim();
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            if (!selectedFile || !userBio.value.trim()) return;
+
+            error.textContent = '';
+            loading.style.display = 'block';
+            recommendations.innerHTML = '';
+            submitBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('user_bio', userBio.value.trim());
+            formData.append('eml_file', selectedFile);
+
+            try {
+                const response = await fetch(`/upload?top_n=${numRecommendations.value}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                displayRecommendations(data.recommendations);
+            } catch (err) {
+                error.textContent = err.message || 'An error occurred';
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        function displayRecommendations(papers) {
+            recommendations.innerHTML = papers.map(paper => `
+                <div class="paper-card">
+                    <h3>${paper.title}</h3>
+                    <div class="authors">${paper.authors}</div>
+                    <div class="abstract">${paper.abstract}</div>
+                    <a href="${paper.link}" class="link" target="_blank">Read on arXiv</a>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

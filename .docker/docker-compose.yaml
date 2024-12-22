@@ -1,16 +1,16 @@
 version: '3.8'
 
 services:
-  arxiv-recommender:
+  web:
     build:
       context: ..
-      dockerfile: .docker/Dockerfile
+      dockerfile: .docker/Dockerfile.app
     user: "${UID-1000}:${GID-1000}"
     volumes:
-      - ../app/output:/app/output
-      - ../app/input:/app/input
-      - ../app/scripts:/app/scripts
+      - ../app:/app
     env_file:
       - .env
     working_dir: /app
     command: "python3 scripts/main.py"
+    ports:
+      - "5000:5000"

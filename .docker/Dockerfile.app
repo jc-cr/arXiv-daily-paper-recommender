@@ -6,3 +6,11 @@ RUN chmod 777 /app
 
 # Install dependencies
 RUN pip install python-dotenv
+
+
+RUN pip install --no-cache-dir \
+    quart \
+    quart-cors \
+    msgpack \
+    pyzmq \
+    requests \

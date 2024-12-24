@@ -32,11 +32,19 @@
             margin-bottom: 20px;
         }
 
+        .user-api-key {
+            width: 90%;
+            height: 50px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
         .user-bio {
-            width: 100%;
+            width: 90%;
             height: 150px;
             padding: 10px;
-            margin-bottom: 20px;
             border: 1px solid #ddd;
             border-radius: 4px;
             resize: vertical;
@@ -44,11 +52,12 @@
 
         .drop-zone {
             border: 2px dashed #ccc;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
             margin-bottom: 20px;
             border-radius: 4px;
             cursor: pointer;
+            width: 90%;
         }
 
         .drop-zone.dragover {
@@ -67,7 +76,7 @@
         }
 
         .submit-btn {
-            width: 100%;
+            width: 95%;
             padding: 10px;
             background-color: #0066cc;
             color: white;
@@ -158,7 +167,7 @@
         }
 
         .form-group select {
-            width: 100%;
+            width: 95%;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -171,13 +180,27 @@
     <div class="container">
         <div class="left-panel">
             <h1>Arxiv Paper Recommendation App</h1>
+            <p> To get started, enter your API key, select a model, provide your research interests and background, and upload a .eml file of Arxiv paper. All processing is done client-side, so your data never leaves your browser.</p>
+
+            <h2>Model Settings</h2>
+            <textarea class="user-api-key" placeholder="Enter your API key..."></textarea>
             
-            <h2>User Bio</h2>
+            <div class="form-group">
+                <label for="selected_model">Select a model:</label>
+                <select id="selected_model">
+                    <option value="gpt-4o-mini" selected>GPT-4o-mini</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                </select>
+            </div>
+
+            <h2>Recommendation Params</h2>
+
+            <h3>User Bio</h3>
             <textarea class="user-bio" placeholder="Enter your research interests and background..."></textarea>
             
-            <h2>.eml File of Arxiv Papers</h2>
+            <h3>.eml File of Arxiv Papers</h3>
             <div class="drop-zone" id="dropZone">
-                <p>Drag and drop your .eml file here, or click to select</p>
+                <p>Drag and drop your .eml file here, or click here to select from filesystem</p>
                 <input type="file" id="fileInput" accept=".eml" style="display: none;">
                 <div class="current-file" id="currentFile"></div>
             </div>
@@ -203,107 +226,7 @@
             <div class="recommendations" id="recommendations"></div>
         </div>
     </div>
+<script src="arxiv_rec.js"></script>
 
-    <script>
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const currentFile = document.getElementById('currentFile');
-        const submitBtn = document.getElementById('submitBtn');
-        const error = document.getElementById('error');
-        const loading = document.getElementById('loading');
-        const recommendations = document.getElementById('recommendations');
-        const userBio = document.querySelector('.user-bio');
-        const numRecommendations = document.getElementById('numRecommendations');
-        
-        let selectedFile = null;
-
-        // Drag and drop handlers
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            handleFile(e.dataTransfer.files[0]);
-        });
-
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFile(e.target.files[0]);
-        });
-
-        function handleFile(file) {
-            if (!file) return;
-            
-            if (!file.name.endsWith('.eml')) {
-                error.textContent = 'Please upload a .eml file';
-                return;
-            }
-
-            selectedFile = file;
-            currentFile.textContent = file.name;
-            error.textContent = '';
-            updateSubmitButton();
-        }
-
-        userBio.addEventListener('input', updateSubmitButton);
-
-        function updateSubmitButton() {
-            submitBtn.disabled = !selectedFile || !userBio.value.trim();
-        }
-
-        submitBtn.addEventListener('click', async () => {
-            if (!selectedFile || !userBio.value.trim()) return;
-
-            error.textContent = '';
-            loading.style.display = 'block';
-            recommendations.innerHTML = '';
-            submitBtn.disabled = true;
-
-            const formData = new FormData();
-            formData.append('user_bio', userBio.value.trim());
-            formData.append('eml_file', selectedFile);
-
-            try {
-                const response = await fetch(`/upload?top_n=${numRecommendations.value}`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                displayRecommendations(data.recommendations);
-            } catch (err) {
-                error.textContent = err.message || 'An error occurred';
-            } finally {
-                loading.style.display = 'none';
-                submitBtn.disabled = false;
-            }
-        });
-
-        function displayRecommendations(papers) {
-            recommendations.innerHTML = papers.map(paper => `
-                <div class="paper-card">
-                    <h3>${paper.title}</h3>
-                    <div class="authors">${paper.authors}</div>
-                    <div class="abstract">${paper.abstract}</div>
-                    <a href="${paper.link}" class="link" target="_blank">Read on arXiv</a>
-                </div>
-            `).join('');
-        }
-    </script>
 </body>
 </html>
